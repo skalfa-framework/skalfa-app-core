@@ -18,8 +18,7 @@ export * from "./conversion";
 export * from "./shortcut";
 export * from "./logger";
 export * from "./registry";
-export * from "./commands/light";
-export * from "./commands/barrels";
+export * from "./commands/cli";
 
 // ==============================>
 // ## Detect device size
