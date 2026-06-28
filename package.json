@@ -20,6 +20,7 @@
   "dependencies": {
     "axios": "^1.12.0",
     "clsx": "^2.1.1",
+    "commander": "^12.1.0",
     "crypto-js": "^4.2.0",
     "js-cookie": "^3.0.5",
     "lz-string": "^1.5.0",
