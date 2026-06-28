@@ -5,7 +5,7 @@ import { logger } from "./logger";
 
 const program = new Command();
 
-program.name("light").description("Next Light CLI").version("1.0.0");
+program.name("light").description("Skalfa-app CLI").version("1.0.0");
 
 program.command("use-pdf").description("Copy pdf.worker.min.mjs ke folder public/").action(usePdf );
 program.command("blueprint")

@@ -1,8 +1,8 @@
 import fs from "fs";
 import path from "path";
-import { ValidationRules } from "../validation.util";
+import { ValidationRules } from "../validation";
 import { logger } from "./logger";
-import { conversion } from "../conversion.util";
+import { conversion } from "../conversion";
 
 
 
