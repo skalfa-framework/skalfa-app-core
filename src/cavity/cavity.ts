@@ -1,5 +1,5 @@
 import { registry } from "../registry";
-import { logger } from "../commands/logger";
+import { logger } from "../logger";
 
 const name           =  String(process.env.NEXT_PUBLIC_APP_NAME || "").toLowerCase().trim().replace(/[^\w\s-]/g, "").replace(/[\s_-]+/g, "-").replace(/^-+|-+$/g, "") + ".cavity";
 const storeName      =  "cache";

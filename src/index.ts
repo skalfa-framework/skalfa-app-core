@@ -16,7 +16,7 @@ export * from "./table";
 export * from "./validation";
 export * from "./conversion";
 export * from "./shortcut";
-export * from "./commands/logger";
+export * from "./logger";
 export * from "./registry";
 
 // ==============================>
