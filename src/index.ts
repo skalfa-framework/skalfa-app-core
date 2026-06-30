@@ -14,6 +14,5 @@ export * from "./conversion";
 export * from "./shortcut";
 export * from "./logger";
 export * from "./registry";
-export * from "./commands/cli";
 export * from "./hooks";
 
