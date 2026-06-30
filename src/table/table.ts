@@ -99,7 +99,14 @@ export const useTable = (
       });
     }
 
-    router.replace(url.pathname + "?" + url.searchParams.toString(), { scroll: false });
+    const newSearch = url.searchParams.toString();
+    const currentSearch = typeof window !== "undefined"
+      ? (window.location.search.startsWith("?") ? window.location.search.slice(1) : window.location.search)
+      : "";
+
+    if (newSearch !== currentSearch) {
+      router.replace(url.pathname + "?" + newSearch, { scroll: false });
+    }
   };
 
   useEffect(() => {
