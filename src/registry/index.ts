@@ -12,6 +12,8 @@ export type DBSchema = {
   stores: Record<string, any>;
 };
 
+
+
 class ServiceRegistry {
   private services: Registry = {};
 

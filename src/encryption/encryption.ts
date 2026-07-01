@@ -1,6 +1,10 @@
 import CryptoJS from "crypto-js";
 
+
+
 type AlgorithmType = "AES" | "TripleDES" | "SHA256" | "SHA512" | "MD5";
+
+
 
 export const encryption = {
   // ==============================>

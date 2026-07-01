@@ -4,6 +4,8 @@ import { useEffect, useState } from "react"
 import { ApiType, useGetApi } from "../api"
 import { registry } from "../registry"
 
+
+
 export type ResourceParams = {
   page      ?:  number
   paginate  ?:  number
@@ -14,28 +16,28 @@ export type ResourceParams = {
 }
 
 export type UseResourceApi = ApiType & {
-  method?: "GET"
+  method  ?:  "GET"
 }
 
 export type UseResourceIdb = {
-  store: string
-  schema?: any
+  store    :  string
+  schema  ?:  any
 }
 
-export type UseResourceProps =
-  | ({ path?: string; url?: string } & UseResourceApi)
-  | ({ idb: UseResourceIdb })
+export type UseResourceProps = ({ path?: string; url?: string } & UseResourceApi) | ({ idb: UseResourceIdb })
 
-export function useResource(
-  props: UseResourceProps & { params?: ResourceParams }
-) {
+
+
+export function useResource(props: UseResourceProps & { params?: ResourceParams }) {
+  // ========================>
+  // ## API resource handler
+  // ========================>
   const isApi = "path" in props || "url" in props
-
   const apiResult = useGetApi(isApi ? (props as UseResourceApi & { params?: ResourceParams }) : ({} as any), !isApi)
 
-  // =====================
-  // IDB MODE
-  // =====================
+  // ========================>
+  // ## IDB resource handler
+  // ========================>
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState<{data: any[], total_row: number} | null>(null)
 
@@ -45,25 +47,20 @@ export function useResource(
     if (!("idb" in props)) return
 
     setLoading(true)
+
     try {
       const idb = registry.get("idb")
-      if (!idb) {
-        throw new Error("IndexedDB (IDB) extension is not installed or registered.")
-      }
 
-      const idbClient = props.idb.schema
-        ? idb.useSchema(props.idb.schema)
-        : idb
+      if (!idb) throw new Error("IndexedDB (IDB) extension is not installed or registered.")
+
+      const idbClient = props.idb.schema ? idb.useSchema(props.idb.schema) : idb
       
       let q = await idbClient.query(props.idb.store)
 
       if (idbParams.search) {
         const keyword = idbParams.search.toLowerCase()
-        q = q.where((row: any) =>
-          Object.values(row).some((v) =>
-            String(v).toLowerCase().includes(keyword)
-          )
-        )
+
+        q = q.where((row: any) => Object.values(row).some((v) => String(v).toLowerCase().includes(keyword)))
       }
 
       if (Array.isArray(idbParams.filter)) {
@@ -82,11 +79,8 @@ export function useResource(
         q = q.paginate(idbParams.page || 0,idbParams.paginate)
       }
 
-      const [rows, total] = await Promise.all([
-        q.get(),
-        q.count(),
-      ])
-      // const rows = await q.get()
+      const [rows, total] = await Promise.all([q.get(), q.count()])
+
       setData({ data: rows, total_row: total })
     } finally {
       setLoading(false)
@@ -104,20 +98,20 @@ export function useResource(
     idbParams.page,
   ])
 
-  // =====================
-  // Unified return
-  // =====================
+  // =======================>
+  // ## Unified return
+  // =======================>
   if (isApi) {
     return {
-      loading: apiResult.loading,
-      data: apiResult.data,
-      reset: apiResult.reset,
+      loading  :  apiResult.loading,
+      data     :  apiResult.data,
+      reset    :  apiResult.reset,
     }
   }
   
   return {
     loading,
-    data: data,
-    reset: fetchIdb,
+    data   :  data,
+    reset  :  fetchIdb,
   }
 }

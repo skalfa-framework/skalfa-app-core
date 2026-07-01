@@ -6,38 +6,15 @@ import { redirect } from "next/navigation";
 import { auth } from "../auth";
 import { cavity } from "../cavity";
 
-// =========================>
-// ## Build auth bearer
-// =========================>
-export const authBearer = (bearer?: string): string | null => {
-  const token  =  bearer || auth.getAccessToken() || null;
-  return token ? `Bearer ${token}` : null;
-};
 
-// =========================>
-// ## Api error handler
-// =========================>
-const handleErrors = (fetch: AxiosResponse) => {
-  if (fetch?.status === 401) redirect(auth.PATH_LOGIN);
-  if (fetch?.status === 403) redirect(auth.PATH_BASE);
-  return fetch;
-};
 
-// =========================>
-// ## Type of filter params
-// =========================>
 export type ApiFilterType = {
-  /** Use filter logic with: "and" / "or". */
   logic   ?:  "and" | "or";
-  /** Use filter type with: "eq" = Equal, "ne" = Not Equal, "in" = In, "ni" = Not In, "bw" = Between. */
   type    ?:  "eq" | "ne" | "in" | "ni" | "bw" | "";
   column  ?:  string;
   value   ?:  string | number | number[] | string[] | null;
 };
 
-// =========================>
-// ## Type of api params
-// =========================>
 export type ApiParamsType = {
   page              ?:  number;
   paginate          ?:  number;
@@ -50,9 +27,6 @@ export type ApiParamsType = {
   filter            ?:  ApiFilterType[];
 };
 
-// =========================>
-// ## Type of api props
-// =========================>
 export type ApiType = {
   path           ?:  string;
   url            ?:  string;
@@ -64,9 +38,6 @@ export type ApiType = {
   bearer         ?:  string;
 };
 
-// =========================>
-// ## Api filter value
-// =========================>
 export const ApiFilterValue = {
   eq  :  "eq",
   ne  :  "ne",
@@ -75,25 +46,23 @@ export const ApiFilterValue = {
   bw  :  "bw",
 };
 
+
+
 // =========================>
 // ## Api fetching handler
 // =========================>
-export const api = async ({
-  path,
-  url,
-  method,
-  params,
-  payload,
-  includeParams,
-  headers,
-  bearer,
-}: ApiType) => {
+export const api = async ({ path, url, method, params, payload, includeParams, headers, bearer }: ApiType) => {
   const fetchUrl                              =  url || `${process.env.NEXT_PUBLIC_API_HOST}/${path || ""}`;
   
+  // =========================>
+  // ## Build headers 
+  // =========================>
   const buildHeaders: Record<string, string>  =  {Authorization: authBearer(bearer) || "", ...headers};
-
   buildHeaders["Content-Type"]                =  buildHeaders["Content-Type"] || "multipart/form-data";
   
+  // =========================>
+  // ## Build params
+  // =========================>
   const filter: Record<string, any>           =  {};
   const jsonParams: Record<string, any>       =  {};
   
@@ -113,21 +82,25 @@ export const api = async ({
       }
     });
   }
-  
+
+  // =========================>
+  // ## Axios handler
+  // =========================>
   return await axios(fetchUrl, {
-      method   :  method || "GET",
-      headers  :  buildHeaders,
-      data     :  payload,
-      params   : {
-        ...params,
-        ...jsonParams,
-        ...(params?.filter ? { filter: JSON.stringify(filter)} : {}),
-        ...includeParams,
-      },
-    })
-    .then((res) => res)
-    .catch((err) => handleErrors(err.response));
+    method   :  method || "GET",
+    headers  :  buildHeaders,
+    data     :  payload,
+    params   : {
+      ...params,
+      ...jsonParams,
+      ...(params?.filter ? { filter: JSON.stringify(filter)} : {}),
+      ...includeParams,
+    },
+  })
+  .then((res) => res)
+  .catch((err) => handleErrors(err.response));
 };
+
 
 // =========================>
 // ## Hook of get api 
@@ -190,4 +163,25 @@ export const useGetApi = (props: ApiType & { method?: "GET", cacheName?: string;
   const reset = () => fetch(true);
 
   return { loading, code, data, reset };
+};
+
+
+
+// =========================>
+// ## Build auth bearer
+// =========================>
+export const authBearer = (bearer?: string): string | null => {
+  const token  =  bearer || auth.getAccessToken() || null;
+  return token ? `Bearer ${token}` : null;
+};
+
+
+
+// =========================>
+// ## Api error handler
+// =========================>
+const handleErrors = (fetch: AxiosResponse) => {
+  if (fetch?.status === 401) redirect(auth.PATH_LOGIN);
+  if (fetch?.status === 403) redirect(auth.PATH_BASE);
+  return fetch;
 };

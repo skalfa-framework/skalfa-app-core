@@ -7,12 +7,14 @@ import { ApiFilterType, ApiParamsType } from "../api";
 import { conversion } from "../conversion";
 import { ResourceParams, useResource, UseResourceApi, UseResourceIdb, UseResourceProps } from "../resource";
 
+
+
 export type TableStateType = {
   params    ?:  ApiParamsType;
   data      ?:  Record<string, any>[];
   selected  ?:  Record<string, any> | null;
   checks    ?:  (string | number)[] | null;
-  focus    ?:  number | null;
+  focus     ?:  number | null;
 };
 
 export type FetchControlType = {
@@ -24,11 +26,13 @@ export type FetchControlType = {
   bearer         ?:  string;
 };
 
+
+
 export const useTable = (
   fetchControl  :  UseResourceProps & { params?: ResourceParams },
   id            :  string = "",
   title         :  string = "",
-  urlParam     :  boolean | {
+  urlParam      :  boolean | {
     compressed ?:  boolean
   }
 ) => {
@@ -39,8 +43,8 @@ export const useTable = (
   // ======================
   // ## Table state key
   // ======================
-  const getTableKey = () => id || (title ? conversion.strSlug(title) : null) || (fetchControl as UseResourceApi).path || (fetchControl as UseResourceIdb).store || "";
-  const tableKey = getTableKey();
+  const getTableKey  =  () => id || (title ? conversion.strSlug(title) : null) || (fetchControl as UseResourceApi).path || (fetchControl as UseResourceIdb).store || "";
+  const tableKey     =  getTableKey();
 
   // ======================
   // ## Parse state url
@@ -99,10 +103,8 @@ export const useTable = (
       });
     }
 
-    const newSearch = url.searchParams.toString();
-    const currentSearch = typeof window !== "undefined"
-      ? (window.location.search.startsWith("?") ? window.location.search.slice(1) : window.location.search)
-      : "";
+    const newSearch      =  url.searchParams.toString();
+    const currentSearch  =  typeof window  !==  "undefined" ? (window.location.search.startsWith("?") ? window.location.search.slice(1) : window.location.search) : "";
 
     if (newSearch !== currentSearch) {
       router.replace(url.pathname + "?" + newSearch, { scroll: false });
@@ -113,51 +115,42 @@ export const useTable = (
     if (state.params && urlParam) updateUrlParams(state.params);
   }, [state.params]);
 
-
-
   // ===========================
   // ## get url state
   // ===========================
   useEffect(() => {
     if(urlParam) {
       const params = getParamsFromUrl();
+
       setState((prev) => ({ ...prev, params }));
     }
   }, []);
-
-
-
 
   // ==========================
   // ## Fetch api
   // ==========================
   const { loading, data, reset } = useResource({
     ...fetchControl,
-    method: "GET",
-    params: {
+    method  :  "GET",
+    params  :  {
       ...state.params,
       ...fetchControl.params
     },
   });
-  
 
   // ==========================
   // ## Setter helper
   // ==========================
-  const setParam = <K extends keyof ApiParamsType>(key: K, value: ApiParamsType[K]) => setState((prev) => ({ ...prev, params: { ...prev.params, [key]: value } }));
-
-  const setSelected = (selected: Record<string, any> | null) => setState((prev) => ({ ...prev, selected }))
-  
-  const setChecks = (checks: (string | number)[] | null) => setState((prev) => ({ ...prev, checks }))
-
-  const setFocus = (focus: number | null) => setState((prev) => ({ ...prev, focus }))
-
+  const setParam     =  <K extends keyof ApiParamsType>(key: K, value: ApiParamsType[K]) => setState((prev) => ({ ...prev, params: { ...prev.params, [key]: value } }));
+  const setSelected  =  (selected: Record<string, any> | null) => setState((prev) => ({ ...prev, selected }))
+  const setChecks    =  (checks: (string | number)[] | null) => setState((prev) => ({ ...prev, checks }))
+  const setFocus     =  (focus: number | null) => setState((prev) => ({ ...prev, focus }))
 
   // ==========================
   // ## Table Control
   // ==========================
   const tableControl  =  {
-    loading: loading,
+    loading         :  loading,
     sortBy          :  state?.params?.sort,
     onChangeSortBy  :  (e: string[]) => setParam('sort', e),
     search          :  state?.params?.search,
@@ -185,10 +178,10 @@ export const useTable = (
     setParam,
     focus: state.focus,
     setFocus,
-    selected: state.selected,
-    setSelected: setSelected,
-    checks: state.checks,
-    setChecks: setChecks,
     tableControl,
+    selected     :  state.selected,
+    setSelected  :  setSelected,
+    checks       :  state.checks,
+    setChecks    :  setChecks,
   };
 };

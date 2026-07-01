@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+
+
 // ==============================>
 // ## Detect device size
 // ==============================>
@@ -36,6 +38,8 @@ export const useResponsive = () => {
   };
 };
 
+
+
 // ==============================>
 // ## Detect keyboard open
 // ==============================>
@@ -59,6 +63,8 @@ export function useKeyboardOpen() {
 
   return isKeyboardOpen;
 }
+
+
 
 // ==============================>
 // ## Search with typing reference

@@ -1,6 +1,16 @@
 import { registry } from "../registry";
 import { logger } from "../logger";
 
+
+
+type CavityType = {
+  key      :  string;
+  data     :  any;
+  expired  :  number;
+};
+
+
+
 const name           =  String(process.env.NEXT_PUBLIC_APP_NAME || "").toLowerCase().trim().replace(/[^\w\s-]/g, "").replace(/[\s_-]+/g, "-").replace(/^-+|-+$/g, "") + ".cavity";
 const storeName      =  "cache";
 const version        =  1;
@@ -16,11 +26,7 @@ function getSocket() {
   return null;
 }
 
-type CavityType = {
-  key      :  string;
-  data     :  any;
-  expired  :  number;
-};
+
 
 // ==============================>
 // ## Init indexDb
@@ -40,6 +46,8 @@ async function idb(): Promise<IDBDatabase> {
     request.onerror    =  () => reject(request.error);
   });
 }
+
+
 
 export const cavity = {
   // ==============================>
@@ -101,6 +109,9 @@ export const cavity = {
     return tx.commit;
   },
 
+  // ==============================>
+  // ## Cavity socket handler
+  // ==============================>
   socket: {
     register: () => {
       const socket = getSocket();

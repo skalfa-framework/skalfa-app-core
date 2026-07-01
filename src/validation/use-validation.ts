@@ -3,15 +3,17 @@
 import { useEffect, useState } from "react"
 import { validation, ValidationRules } from "./validation"
 
+
+
 // =========================>
 // ## Check validation Hook
 // =========================>
 export const useValidation = (
-  value: any = "",
-  rules: ValidationRules = "",
-  includes: string = "",
-  sleep: boolean = false
-): [string, (message: string) => void] => {
+  value     :  any = "",
+  rules     :  ValidationRules = "",
+  includes  :  string = "",
+  sleep     :  boolean = false
+):  [string, (message: string) => void] => {
   const [message, setMessage] = useState<string>("")
 
   useEffect(() => {

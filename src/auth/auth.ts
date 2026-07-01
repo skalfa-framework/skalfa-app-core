@@ -6,17 +6,17 @@ export const auth = {
   // ==============================>
   // ## Path of login page
   // ==============================>
-  PATH_LOGIN                    :   '/auth/login',
+  PATH_LOGIN                    :   process.env.NEXT_PUBLIC_LOGIN_PATH || '/auth/login',
   
   // ==============================>
   // ## Path of home page
   // ==============================>
-  PATH_BASE                     :   '/',
+  PATH_BASE                     :   process.env.NEXT_PUBLIC_BASE_PATH || '/',
   
   // ==============================>
   // ## Access token expired (days)
   // ==============================>
-  ACCESS_TOKEN_EXPIRED          :   7,
+  ACCESS_TOKEN_EXPIRED          :   Number(process.env.NEXT_PUBLIC_ACCESS_TOKEN_EXPIRED) || 7,
 
   // ==============================>
   // ## Name of cookie access token

@@ -51,8 +51,8 @@ export type ValidationHelperPropsType = {
 }
 
 export type ValidationHelperResults = {
-  valid: boolean
-  message: string
+  valid    :  boolean
+  message  :  string
 }
 
 // ==========================>
