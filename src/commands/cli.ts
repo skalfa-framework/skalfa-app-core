@@ -133,7 +133,8 @@ export const watchCommand = new Command("watch")
   .description("Start dev watch process")
   .action(() => {
     const pm = getPackageManager();
-    executeCommand(pm === "bun" ? "bun next dev" : "next dev");
+    const port = process.env.NEXT_PUBLIC_APP_PORT || "3000";
+    executeCommand(pm === "bun" ? `bun next dev -p ${port}` : `next dev -p ${port}`);
   });
 
 export const buildCommand = new Command("build")
@@ -145,7 +146,8 @@ export const buildCommand = new Command("build")
 export const startCommand = new Command("start")
   .description("Start production server")
   .action(() => {
-    executeCommand("next start");
+    const port = process.env.NEXT_PUBLIC_APP_PORT || "3000";
+    executeCommand(`next start -p ${port}`);
   });
 
 export const testCommand = new Command("test")
