@@ -83,6 +83,22 @@ export const watchBarrelsCommand = new Command("watch:barrels")
       execSync("npx barrelsby -c barrels.json", { cwd: rootDir });
     } catch {}
 
+    let debounceTimer: NodeJS.Timeout | null = null;
+    const runBarrels = () => {
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
+      debounceTimer = setTimeout(() => {
+        exec("npx barrelsby -c barrels.json", { cwd: rootDir }, (error) => {
+          if (error) {
+            logger.error(`Failed to update barrels: ${error.message}`);
+          } else {
+            logger.info("Barrels updated successfully!");
+          }
+        });
+      }, 300);
+    };
+
     directories.forEach((dir) => {
       const absoluteDir = path.join(rootDir, dir);
 
@@ -92,14 +108,13 @@ export const watchBarrelsCommand = new Command("watch:barrels")
       }
 
       fs.watch(absoluteDir, { recursive: true }, (_, filename) => {
-        if (filename && (filename.endsWith(".ts") || filename.endsWith(".tsx")) && filename !== "index.ts") {
-          exec("npx barrelsby -c barrels.json", { cwd: rootDir }, (error) => {
-            if (error) {
-              logger.error(`Failed to update barrels for ${dir}: ${error.message}`);
-            } else {
-              logger.info(`Barrels updated: ${path.join(dir, "index.ts")}`);
-            }
-          });
+        if (
+          filename &&
+          (filename.endsWith(".ts") || filename.endsWith(".tsx")) &&
+          !filename.endsWith("index.ts") &&
+          !filename.endsWith("index.tsx")
+        ) {
+          runBarrels();
         }
       });
     });
@@ -126,7 +141,7 @@ export const devCommand = new Command("dev")
   .description("Start development server")
   .action(() => {
     const pm = getPackageManager();
-    executeCommand(`concurrently --raw "${pm} run watch" "${pm} run skalfa watch:barrels"`);
+    executeCommand(`concurrently --raw "${pm} run skalfa watch" "${pm} run skalfa watch:barrels"`);
   });
 
 export const watchCommand = new Command("watch")
@@ -134,13 +149,13 @@ export const watchCommand = new Command("watch")
   .action(() => {
     const pm = getPackageManager();
     const port = process.env.NEXT_PUBLIC_APP_PORT || "3000";
-    executeCommand(pm === "bun" ? `bun next dev -p ${port}` : `next dev -p ${port}`);
+    executeCommand(pm === "bun" ? `bun next dev -p ${port} --webpack` : `next dev -p ${port} --webpack`);
   });
 
 export const buildCommand = new Command("build")
   .description("Build production bundle")
   .action(() => {
-    executeCommand("next build");
+    executeCommand("next build --webpack");
   });
 
 export const startCommand = new Command("start")
