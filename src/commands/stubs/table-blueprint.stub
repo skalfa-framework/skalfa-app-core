@@ -1,6 +1,8 @@
 {{ marker }}
 import { TableSupervisionComponent } from "@components";
 
+
+
 export default function {{ name }}Page() {
   return (
     <>
