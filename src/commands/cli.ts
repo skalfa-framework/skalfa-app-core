@@ -92,7 +92,9 @@ function postProcessBarrels(rootDir: string) {
     ``,
     content.trim(),
     ``,
-    `// Explicit overrides to resolve export ambiguity`,
+    `// ==================================================>`,
+    `// ## Explicit overrides to resolve export ambiguity`,
+    `// ==================================================>`,
     ...explicitExports
   ].join("\n") + "\n";
 
