@@ -27,6 +27,78 @@ export const blueprintCommand = new Command("blueprint")
     process.exit(0);
   });
 
+function postProcessBarrels(rootDir: string) {
+  const componentsIndex = path.join(rootDir, "components", "index.ts");
+  if (!fs.existsSync(componentsIndex)) return;
+
+  let content = fs.readFileSync(componentsIndex, "utf8");
+
+  // Find all export * from './relative/path'
+  const exportStarRegex = /export\s+\*\s+from\s+['"](\.\/[^'"]+)['"]/g;
+  let match;
+  const localExports: string[] = [];
+  while ((match = exportStarRegex.exec(content)) !== null) {
+    localExports.push(match[1]);
+  }
+
+  if (localExports.length === 0) return;
+
+  const explicitExports: string[] = [];
+  const componentsDir = path.join(rootDir, "components");
+
+  for (const relPath of localExports) {
+    const possiblePaths = [
+      path.resolve(componentsDir, relPath + ".tsx"),
+      path.resolve(componentsDir, relPath + ".ts"),
+      path.resolve(componentsDir, relPath, "index.tsx"),
+      path.resolve(componentsDir, relPath, "index.ts"),
+    ];
+
+    let filePath = "";
+    for (const p of possiblePaths) {
+      if (fs.existsSync(p)) {
+        filePath = p;
+        break;
+      }
+    }
+
+    if (!filePath) continue;
+
+    const fileContent = fs.readFileSync(filePath, "utf8");
+    const symbolRegex = /export\s+(?:async\s+)?(const|let|var|function|class|type|interface)\s+(\w+)/g;
+    let symbolMatch;
+    const values: string[] = [];
+    const types: string[] = [];
+    while ((symbolMatch = symbolRegex.exec(fileContent)) !== null) {
+      const keyword = symbolMatch[1];
+      const name = symbolMatch[2];
+      if (keyword === "type" || keyword === "interface") {
+        types.push(name);
+      } else {
+        values.push(name);
+      }
+    }
+
+    if (values.length > 0) {
+      explicitExports.push(`export { ${values.join(", ")} } from "${relPath}";`);
+    }
+    if (types.length > 0) {
+      explicitExports.push(`export type { ${types.join(", ")} } from "${relPath}";`);
+    }
+  }
+
+  const newContent = [
+    `export * from "@skalfa/skalfa-component";`,
+    ``,
+    content.trim(),
+    ``,
+    `// Explicit overrides to resolve export ambiguity`,
+    ...explicitExports
+  ].join("\n") + "\n";
+
+  fs.writeFileSync(componentsIndex, newContent, "utf8");
+}
+
 // =====================================>
 // ## Command: barrels (run once)
 // =====================================>
@@ -44,6 +116,7 @@ export const barrelsCommand = new Command("barrels")
     logger.info("Generating barrels...");
     try {
       execSync("npx barrelsby -c barrels.json", { cwd: rootDir, stdio: "inherit" });
+      postProcessBarrels(rootDir);
       logger.info("Barrels successfully generated!");
       process.exit(0);
     } catch (err) {
@@ -81,6 +154,7 @@ export const watchBarrelsCommand = new Command("watch:barrels")
     logger.info("Initializing barrels generation...");
     try {
       execSync("npx barrelsby -c barrels.json", { cwd: rootDir });
+      postProcessBarrels(rootDir);
     } catch {}
 
     let debounceTimer: NodeJS.Timeout | null = null;
@@ -93,7 +167,12 @@ export const watchBarrelsCommand = new Command("watch:barrels")
           if (error) {
             logger.error(`Failed to update barrels: ${error.message}`);
           } else {
-            logger.info("Barrels updated successfully!");
+            try {
+              postProcessBarrels(rootDir);
+              logger.info("Barrels updated successfully!");
+            } catch (postErr: any) {
+              logger.error(`Failed to post-process barrels: ${postErr.message}`);
+            }
           }
         });
       }, 300);
