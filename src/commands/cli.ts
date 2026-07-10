@@ -5,6 +5,7 @@ import { logger } from "../logger";
 import fs from "fs";
 import path from "path";
 import { exec, execSync, spawn } from "child_process";
+import { runBuild as runBuildLang, startDev as startDevLang } from "@skalfa/skalfa-lang/compiler";
 
 // =====================================>
 // ## Command: use-pdf
@@ -228,21 +229,7 @@ function executeCommand(commandLine: string): void {
   });
 }
 
-import os from "os";
 
-function getGlobalSkalfa(): string {
-  try {
-    const cmd = os.platform() === "win32" ? "where.exe skalfa" : "which skalfa";
-    const paths = execSync(cmd, { stdio: "pipe" }).toString().trim().split(/\r?\n/);
-    for (const p of paths) {
-      const normalized = p.trim();
-      if (normalized && !normalized.includes("node_modules") && !normalized.includes(process.cwd())) {
-        return normalized;
-      }
-    }
-  } catch {}
-  return "skalfa";
-}
 
 function runGenerate(projectRoot: string, quiet = false): boolean {
   let scriptPath = path.join(projectRoot, "node_modules", "@skalfa", "skalfa-icon", "scripts", "generate.ts");
@@ -278,7 +265,7 @@ export async function startDevIcon(projectRoot: string, quiet = false): Promise<
   }
 
   if (quiet) {
-    logger.info(`[START] Icon watcher running for: ${iconsDir}`);
+    logger.info(`Icon watcher running for: ${iconsDir}`);
   } else {
     logger.info("👀 Starting icon development watcher...");
     logger.info(`📺 Watching SVG files in: ${iconsDir}`);
@@ -322,13 +309,28 @@ iconCommand
     await startDevIcon(process.cwd(), !!options.quiet);
   });
 
+export const langCommand = new Command("lang")
+  .description("Manage and compile type-safe translation resources for @skalfa/lang.")
+  .argument("<action>", "action to perform: build, dev")
+  .option("-q, --quiet", "Run in quiet mode (suppress verbose logs)")
+  .action(async (action: string, options: { quiet?: boolean }) => {
+    if (action === "build") {
+      const success = await runBuildLang(process.cwd(), false, !!options.quiet);
+      if (!success) process.exit(1);
+      process.exit(0);
+    } else if (action === "dev") {
+      await startDevLang(process.cwd(), !!options.quiet);
+    } else {
+      logger.error(`Unknown action "${action}". Use "build" or "dev".`);
+      process.exit(1);
+    }
+  });
+
 export const devCommand = new Command("dev")
   .description("Start development server")
   .action(() => {
     const pm = getPackageManager();
-    const globalSkalfa = getGlobalSkalfa();
-    const escapedSkalfa = globalSkalfa.includes(" ") ? `\\"${globalSkalfa}\\"` : globalSkalfa;
-    executeCommand(`concurrently --raw "${pm} run skalfa watch" "${pm} run skalfa watch:barrels" "${pm} run skalfa icon dev --quiet" "${escapedSkalfa} lang dev --quiet"`);
+    executeCommand(`concurrently --raw "${pm} run skalfa watch" "${pm} run skalfa watch:barrels" "${pm} run skalfa icon dev --quiet" "${pm} run skalfa lang dev --quiet"`);
   });
 
 export const watchCommand = new Command("watch")
@@ -343,6 +345,7 @@ export const buildCommand = new Command("build")
   .description("Build production bundle")
   .action(async () => {
     await runBuildIcon(process.cwd(), true);
+    await runBuildLang(process.cwd(), false, true);
     executeCommand("next build --webpack");
   });
 
@@ -382,6 +385,7 @@ export function runCli() {
   program.addCommand(testCommand);
   program.addCommand(lintCommand);
   program.addCommand(iconCommand);
+  program.addCommand(langCommand);
 
   program.parse(process.argv);
 }
