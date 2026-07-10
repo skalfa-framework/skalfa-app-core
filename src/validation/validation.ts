@@ -1,5 +1,6 @@
 import validator from "validator"
 import { validationLangs } from "./validation.langs"
+import { getLang } from "@skalfa/skalfa-lang"
 
 type Rule =
   | "required"
@@ -74,6 +75,7 @@ export const validation = {
   check: ({ value, rules }: ValidationHelperPropsType): ValidationHelperResults => {
     const parsedRules = validation.normalizeRules(rules)
     const strValue = String(value ?? "").trim()
+    const l = getLang()
 
     for (const rule of parsedRules) {
       const [name, param] = rule.split(":") as [string, string | undefined]
@@ -82,31 +84,31 @@ export const validation = {
         // === BASIC ===
         case "required":
           if (!value || (Array.isArray(value) && value.length === 0)) {
-            return { valid: false, message: validationLangs.required }
+            return { valid: false, message: l.validation.required() }
           }
           break
 
         case "numeric":
           if (!validator.isNumeric(strValue)) {
-            return { valid: false, message: validationLangs.numeric || "Harus berupa angka" }
+            return { valid: false, message: l.validation.numeric() }
           }
           break
 
         case "email":
           if (!validator.isEmail(strValue)) {
-            return { valid: false, message: validationLangs.email }
+            return { valid: false, message: l.validation.email() }
           }
           break
 
         case "url":
           if (!validator.isURL(strValue)) {
-            return { valid: false, message: validationLangs.url || "Harus berupa URL yang valid" }
+            return { valid: false, message: l.validation.url() }
           }
           break
 
         case "date":
           if (!validator.isDate(strValue)) {
-            return { valid: false, message:"Tanggal tidak valid" }
+            return { valid: false, message: l.validation.regex ? l.validation.regex() : "Tanggal tidak valid" }
           }
           break
 
@@ -114,7 +116,7 @@ export const validation = {
         case "min": {
           const min = parseInt(param || "0")
           if (!validator.isLength(strValue, { min })) {
-            return { valid: false, message: validationLangs.min.replace(/@min/g, String(min)) }
+            return { valid: false, message: l.validation.min({ min }) }
           }
           break
         }
@@ -122,7 +124,7 @@ export const validation = {
         case "max": {
           const max = parseInt(param || "0")
           if (!validator.isLength(strValue, { max })) {
-            return { valid: false, message: validationLangs.max.replace(/@max/g, String(max)) }
+            return { valid: false, message: l.validation.max({ max }) }
           }
           break
         }
@@ -132,9 +134,7 @@ export const validation = {
           if (!validator.isLength(strValue, { min: minVal, max: maxVal })) {
             return {
               valid: false,
-              message: validationLangs.min_max
-                .replace(/@min/g, String(minVal))
-                .replace(/@max/g, String(maxVal)),
+              message: l.validation.min_max({ min: minVal, max: maxVal }),
             }
           }
           break
@@ -144,7 +144,7 @@ export const validation = {
         case "in": {
           const allowed = (param || "").split(",")
           if (!allowed.includes(strValue)) {
-            return { valid: false, message: `${validationLangs.in} ${allowed.join(", ")}` }
+            return { valid: false, message: l.validation.in({ keywords: allowed.join(", ") }) }
           }
           break
         }
@@ -152,7 +152,7 @@ export const validation = {
         case "not_in": {
           const notAllowed = (param || "").split(",")
           if (notAllowed.includes(strValue)) {
-            return { valid: false, message: `${validationLangs.not_in} ${notAllowed.join(", ")}` }
+            return { valid: false, message: l.validation.not_in({ keywords: notAllowed.join(", ") }) }
           }
           break
         }
@@ -162,7 +162,7 @@ export const validation = {
           try {
             const pattern = new RegExp(param || "")
             if (!pattern.test(strValue)) {
-              return { valid: false, message: validationLangs.regex || "Format tidak sesuai" }
+              return { valid: false, message: l.validation.regex() }
             }
           } catch {
             return { valid: false, message: "Regex rule tidak valid" }
