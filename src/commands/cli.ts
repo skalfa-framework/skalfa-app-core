@@ -228,11 +228,107 @@ function executeCommand(commandLine: string): void {
   });
 }
 
+import os from "os";
+
+function getGlobalSkalfa(): string {
+  try {
+    const cmd = os.platform() === "win32" ? "where.exe skalfa" : "which skalfa";
+    const paths = execSync(cmd, { stdio: "pipe" }).toString().trim().split(/\r?\n/);
+    for (const p of paths) {
+      const normalized = p.trim();
+      if (normalized && !normalized.includes("node_modules") && !normalized.includes(process.cwd())) {
+        return normalized;
+      }
+    }
+  } catch {}
+  return "skalfa";
+}
+
+function runGenerate(projectRoot: string, quiet = false): boolean {
+  let scriptPath = path.join(projectRoot, "node_modules", "@skalfa", "skalfa-icon", "scripts", "generate.ts");
+  if (!fs.existsSync(scriptPath)) {
+    // Fallback for monorepo development
+    scriptPath = path.resolve(projectRoot, "..", "skalfa-icon", "scripts", "generate.ts");
+  }
+
+  if (fs.existsSync(scriptPath)) {
+    try {
+      execSync(`bun run "${scriptPath}"${quiet ? " --quiet" : ""}`, { stdio: "inherit", cwd: projectRoot });
+      return true;
+    } catch (err: any) {
+      logger.error("❌ Failed to execute icon generator script: " + err.message);
+      return false;
+    }
+  } else {
+    logger.error("❌ Error: @skalfa/skalfa-icon package not found. Make sure it is installed.");
+    return false;
+  }
+}
+
+export async function runBuildIcon(projectRoot: string, quiet = false): Promise<boolean> {
+  if (!quiet) logger.info("🔍 Building custom SVG icons...");
+  return runGenerate(projectRoot, quiet);
+}
+
+export async function startDevIcon(projectRoot: string, quiet = false): Promise<void> {
+  const iconsDir = path.resolve(projectRoot, "icons");
+  if (!fs.existsSync(iconsDir)) {
+    if (!quiet) logger.info(`📁 Creating missing icons folder: ${iconsDir}`);
+    fs.mkdirSync(iconsDir, { recursive: true });
+  }
+
+  if (quiet) {
+    logger.info(`[START] Icon watcher running for: ${iconsDir}`);
+  } else {
+    logger.info("👀 Starting icon development watcher...");
+    logger.info(`📺 Watching SVG files in: ${iconsDir}`);
+  }
+
+  runGenerate(projectRoot, quiet);
+
+  let isThrottled = false;
+  fs.watch(iconsDir, { recursive: true }, (eventType, filename) => {
+    if (filename && filename.endsWith(".svg")) {
+      if (isThrottled) return;
+      isThrottled = true;
+      setTimeout(() => {
+        isThrottled = false;
+      }, 300); // 300ms throttle
+
+      logger.info(`\n⚡ Icon file change detected: ${filename} (${eventType})`);
+      runGenerate(projectRoot, quiet);
+    }
+  });
+}
+
+export const iconCommand = new Command("icon")
+  .description("Manage and compile custom SVG icons for @skalfa/skalfa-icon");
+
+iconCommand
+  .command("build")
+  .description("Compile custom SVG icons once")
+  .option("-q, --quiet", "Run in quiet mode")
+  .action(async (options) => {
+    const success = await runBuildIcon(process.cwd(), !!options.quiet);
+    if (!success) process.exit(1);
+    process.exit(0);
+  });
+
+iconCommand
+  .command("dev")
+  .description("Start icon development watcher")
+  .option("-q, --quiet", "Run in quiet mode")
+  .action(async (options) => {
+    await startDevIcon(process.cwd(), !!options.quiet);
+  });
+
 export const devCommand = new Command("dev")
   .description("Start development server")
   .action(() => {
     const pm = getPackageManager();
-    executeCommand(`concurrently --raw "${pm} run skalfa watch" "${pm} run skalfa watch:barrels" "skalfa icon dev --quiet" "skalfa lang dev --quiet"`);
+    const globalSkalfa = getGlobalSkalfa();
+    const escapedSkalfa = globalSkalfa.includes(" ") ? `\\"${globalSkalfa}\\"` : globalSkalfa;
+    executeCommand(`concurrently --raw "${pm} run skalfa watch" "${pm} run skalfa watch:barrels" "${pm} run skalfa icon dev --quiet" "${escapedSkalfa} lang dev --quiet"`);
   });
 
 export const watchCommand = new Command("watch")
@@ -245,7 +341,8 @@ export const watchCommand = new Command("watch")
 
 export const buildCommand = new Command("build")
   .description("Build production bundle")
-  .action(() => {
+  .action(async () => {
+    await runBuildIcon(process.cwd(), true);
     executeCommand("next build --webpack");
   });
 
@@ -284,6 +381,7 @@ export function runCli() {
   program.addCommand(startCommand);
   program.addCommand(testCommand);
   program.addCommand(lintCommand);
+  program.addCommand(iconCommand);
 
   program.parse(process.argv);
 }
