@@ -1,6 +1,6 @@
 {
   "name": "@skalfa/skalfa-app-core",
-  "version": "1.0.17",
+  "version": "1.0.18",
   "description": "Core framework engine and foundational utility hook library for the Skalfa Next.js frontend.",
   "keywords": [
     "skalfa",
@@ -19,6 +19,7 @@
     "build": "tsc -p tsconfig.build.json"
   },
   "dependencies": {
+    "@skalfa/skalfa-lang": "*",
     "axios": "^1.12.0",
     "clsx": "^2.1.1",
     "commander": "^12.1.0",
@@ -27,8 +28,7 @@
     "lz-string": "^1.5.0",
     "moment": "^2.30.1",
     "tailwind-merge": "^3.0.2",
-    "validator": "^13.15.22",
-    "@skalfa/skalfa-lang": "*"
+    "validator": "^13.15.22"
   },
   "peerDependencies": {
     "next": "^15.0.0 || ^16.0.0",
