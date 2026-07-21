@@ -1,6 +1,6 @@
 "use client"
 
-import { useReducer, useEffect, useState } from "react";
+import { useReducer, useEffect, useState, useRef } from "react";
 import { api, ApiType,  DBSchema, registry, validation, ValidationRules } from "../";
 
 export interface FormRegisterType { 
@@ -40,6 +40,7 @@ const initialState: FormStateType = {
 
 type ActionPayloadType = {
   SET_REGISTER  : FormRegisterType;
+  UNREGISTER    : { name: string };
   SET_VALUES    : FormValueType[];
   SET_VALUE     : FormValueType;
   SET_ERRORS    : FormErrorType[];
@@ -52,6 +53,7 @@ type TypeKeys = keyof ActionPayloadType;
 export type ActionType<
   T extends TypeKeys =
     | "SET_REGISTER"
+    | "UNREGISTER"
     | "SET_VALUES"
     | "SET_VALUE"
     | "SET_ERRORS"
@@ -78,6 +80,14 @@ const formReducer = (state: FormStateType, action: ActionType) => {
         ...state.formRegisters.filter((reg) => reg.name !== action.payload.name),
         action.payload,
       ],
+    };
+
+    // ==============================>
+    // ## Unregister handler
+    // ==============================>
+    case "UNREGISTER"       : return {
+      ...state,
+      formRegisters: state.formRegisters.filter((reg) => reg.name !== action.payload.name),
     };
 
     // ==============================>
@@ -159,9 +169,14 @@ export const useForm = (
   // ## FormControl handler
   // ==============================>
   const formControl  =  (name: string)  =>  ({
+    name,
     register  : (regName: string, regValidations?: ValidationRules) => dispatch({
       type    : "SET_REGISTER",
       payload : { name: regName, validations: regValidations },
+    }),
+    unregister: (regName: string) => dispatch({
+      type    : "UNREGISTER",
+      payload : { name: regName },
     }),
     onChange  :  (e: any)                                        =>  onChange(name, e),
     value     :  state.formValues.find((val)                     =>  val.name === name)?.value || undefined,
@@ -329,6 +344,7 @@ export const useForm = (
       errors          : state.formErrors,
       setErrors       : (errors: FormErrorType[])   => dispatch({ type: "SET_ERRORS", payload: errors }),
       setRegister     : (inputs: FormRegisterType)  => dispatch({ type: "SET_REGISTER", payload: inputs }),
+      setUnregister   : (regName: string)           => dispatch({ type: "UNREGISTER", payload: { name: regName } }),
       loading         : state.loading,
       confirm         : {
         onConfirm,
@@ -364,14 +380,30 @@ export const useInputHandler = (
   validations?: ValidationRules,
   register?: (name: string, validations?: ValidationRules) => void,
   isFile?: boolean,
+  unregister?: (name: string) => void,
 ) => {
   const [inputValue, setInputValue]                    =  useState<any>("");
   const [focus, setFocus]                              =  useState<boolean>(false);
   const [idle, setIdle]                                =  useState(true);
 
+  const registerRef = useRef(register);
+  const unregisterRef = useRef(unregister);
+
   useEffect(() => {
-    name && register?.(name || "", validations);
-  }, [name, validations]);
+    registerRef.current = register;
+    unregisterRef.current = unregister;
+  });
+
+  const validationsKey = typeof validations === "object" ? JSON.stringify(validations) : String(validations || "");
+
+  useEffect(() => {
+    if (name) {
+      registerRef.current?.(name, validations);
+      return () => {
+        unregisterRef.current?.(name);
+      };
+    }
+  }, [name, validationsKey]);
 
   useEffect(() => {
     setInputValue(value && (!isFile || value instanceof File) ? value : "");

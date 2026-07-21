@@ -1,6 +1,6 @@
 {
   "name": "@skalfa/skalfa-app-core",
-  "version": "1.0.18",
+  "version": "1.0.19",
   "description": "Core framework engine and foundational utility hook library for the Skalfa Next.js frontend.",
   "keywords": [
     "skalfa",
