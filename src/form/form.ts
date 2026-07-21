@@ -210,7 +210,14 @@ export const useForm = (
       : getObjectValues()
 
     Object.entries(values).forEach(([k, v]) => {
-      formData.append(k, v ?? "")
+      if (typeof v === "object" && v !== null && !(v instanceof File) && !(v instanceof Blob)) {
+        const baseKey = k.endsWith("_id") ? k.slice(0, -3) : k;
+        Object.entries(v).forEach(([subK, subV]) => {
+          formData.append(`${baseKey}[${subK}]`, (subV as any) ?? "");
+        });
+      } else {
+        formData.append(k, (v as any) ?? "");
+      }
     })
 
     return api({
