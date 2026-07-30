@@ -26,7 +26,7 @@ export const auth = {
   // ==============================>
   // ## set access token to cookie
   // ==============================>
-  setAccessToken                :  (token: string | null, expired?: number) => Cookies.set(auth.ACCESS_TOKEN_NAME, token ? encryption.set(token) : "", { expires: expired || auth.ACCESS_TOKEN_EXPIRED, secure: true }),
+  setAccessToken                :  (token: string | null, expired?: number) => Cookies.set(auth.ACCESS_TOKEN_NAME, token ? encryption.set(token) : "", { expires: expired || auth.ACCESS_TOKEN_EXPIRED, secure: !!process.env.NEXT_PUBLIC_ACCESS_TOKEN_SECURE }),
 
   // ==============================>
   // ## get access token from cookie
