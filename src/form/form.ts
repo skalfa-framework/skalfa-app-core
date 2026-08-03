@@ -203,11 +203,24 @@ export const useForm = (
   }
 
   const submitApi = async () => {
-    const formData = new FormData()
-
     const values = payload
       ? await payload(getObjectValues())
       : getObjectValues()
+
+    const contentType = (submitControl as ApiType).headers?.["Content-Type"] || (submitControl as ApiType).headers?.["content-type"];
+
+    if (contentType === "application/json") {
+      return api({
+        url     : (submitControl as ApiType).url,
+        path    : (submitControl as ApiType).path,
+        method  : (submitControl as ApiType).method || "POST",
+        bearer  : (submitControl as ApiType).bearer,
+        headers : (submitControl as ApiType).headers,
+        payload : values,
+      })
+    }
+
+    const formData = new FormData()
 
     Object.entries(values).forEach(([k, v]) => {
       if (typeof v === "object" && v !== null && !(v instanceof File) && !(v instanceof Blob)) {
