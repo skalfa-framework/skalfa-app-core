@@ -232,15 +232,42 @@ function executeCommand(commandLine: string): void {
 
 
 function runGenerate(projectRoot: string, quiet = false): boolean {
-  let scriptPath = path.join(projectRoot, "node_modules", "@skalfa", "skalfa-icon", "scripts", "generate.ts");
+  // Check for monorepo development/sibling directory first to prioritize local source of truth
+  let scriptPath = path.resolve(projectRoot, "..", "skalfa-icon", "scripts", "generate.js");
   if (!fs.existsSync(scriptPath)) {
-    // Fallback for monorepo development
     scriptPath = path.resolve(projectRoot, "..", "skalfa-icon", "scripts", "generate.ts");
+  }
+  if (!fs.existsSync(scriptPath)) {
+    scriptPath = path.join(projectRoot, "node_modules", "@skalfa", "skalfa-icon", "scripts", "generate.js");
+    if (!fs.existsSync(scriptPath)) {
+      scriptPath = path.join(projectRoot, "node_modules", "@skalfa", "skalfa-icon", "scripts", "generate.ts");
+    }
   }
 
   if (fs.existsSync(scriptPath)) {
     try {
-      execSync(`bun run "${scriptPath}"${quiet ? " --quiet" : ""}`, { stdio: "inherit", cwd: projectRoot });
+      let runner = "node";
+      if (scriptPath.endsWith(".ts")) {
+        try {
+          execSync("bun --version", { stdio: "ignore" });
+          runner = "bun run";
+        } catch {
+          try {
+            execSync("npx tsx --version", { stdio: "ignore" });
+            runner = "npx tsx";
+          } catch {
+            runner = "npx ts-node";
+          }
+        }
+      } else {
+        try {
+          execSync("bun --version", { stdio: "ignore" });
+          runner = "bun run";
+        } catch {
+          runner = "node";
+        }
+      }
+      execSync(`${runner} "${scriptPath}"${quiet ? " --quiet" : ""}`, { stdio: "inherit", cwd: projectRoot });
       return true;
     } catch (err: any) {
       logger.error("❌ Failed to execute icon generator script: " + err.message);
