@@ -126,9 +126,12 @@ export const barrelsCommand = new Command("barrels")
       process.exit(1);
     }
 
+    const pm = getPackageManager();
+    const barrelsRunner = pm === "bun" ? "bunx --bun barrelsby" : "npx barrelsby";
+
     logger.info("Generating barrels...");
     try {
-      execSync("npx barrelsby -c barrels.json", { cwd: rootDir, stdio: "inherit" });
+      execSync(`${barrelsRunner} -c barrels.json`, { cwd: rootDir, stdio: "inherit" });
       postProcessBarrels(rootDir);
       logger.info("Barrels successfully generated!");
       process.exit(0);
@@ -162,11 +165,13 @@ export const watchBarrelsCommand = new Command("watch:barrels")
     }
 
     const directories: string[] = Array.isArray(config.directory) ? config.directory : [config.directory];
+    const pm = getPackageManager();
+    const barrelsRunner = pm === "bun" ? "bunx --bun barrelsby" : "npx barrelsby";
 
     // Run barrels once at startup
     logger.info("Initializing barrels generation...");
     try {
-      execSync("npx barrelsby -c barrels.json", { cwd: rootDir });
+      execSync(`${barrelsRunner} -c barrels.json`, { cwd: rootDir });
       postProcessBarrels(rootDir);
     } catch {}
 
@@ -176,7 +181,7 @@ export const watchBarrelsCommand = new Command("watch:barrels")
         clearTimeout(debounceTimer);
       }
       debounceTimer = setTimeout(() => {
-        exec("npx barrelsby -c barrels.json", { cwd: rootDir }, (error) => {
+        exec(`${barrelsRunner} -c barrels.json`, { cwd: rootDir }, (error) => {
           if (error) {
             logger.error(`Failed to update barrels: ${error.message}`);
           } else {
@@ -215,6 +220,9 @@ export const watchBarrelsCommand = new Command("watch:barrels")
   });
 
 function getPackageManager(): string {
+  if (typeof (process.versions as any)?.bun !== "undefined" || (globalThis as any).Bun) {
+    return "bun";
+  }
   const userAgent = process.env.npm_config_user_agent || "";
   if (userAgent.includes("yarn")) return "yarn";
   if (userAgent.includes("pnpm")) return "pnpm";
@@ -357,7 +365,8 @@ export const devCommand = new Command("dev")
   .description("Start development server")
   .action(() => {
     const pm = getPackageManager();
-    executeCommand(`concurrently --raw "${pm} run skalfa watch" "${pm} run skalfa watch:barrels" "${pm} run skalfa icon dev --quiet" "${pm} run skalfa lang dev --quiet"`);
+    const concurrently = pm === "bun" ? "bun run concurrently" : "concurrently";
+    executeCommand(`${concurrently} --raw "${pm} run skalfa watch" "${pm} run skalfa watch:barrels" "${pm} run skalfa icon dev --quiet" "${pm} run skalfa lang dev --quiet"`);
   });
 
 export const watchCommand = new Command("watch")
@@ -365,22 +374,24 @@ export const watchCommand = new Command("watch")
   .action(() => {
     const pm = getPackageManager();
     const port = process.env.NEXT_PUBLIC_APP_PORT || "3000";
-    executeCommand(pm === "bun" ? `bun next dev -p ${port} --webpack` : `next dev -p ${port} --webpack`);
+    executeCommand(pm === "bun" ? `bun --bun next dev -p ${port} --webpack` : `next dev -p ${port} --webpack`);
   });
 
 export const buildCommand = new Command("build")
   .description("Build production bundle")
   .action(async () => {
+    const pm = getPackageManager();
     await runBuildIcon(process.cwd(), true);
     await runBuildLang(process.cwd(), false, true);
-    executeCommand("next build --webpack");
+    executeCommand(pm === "bun" ? "bun --bun next build --webpack" : "next build --webpack");
   });
 
 export const startCommand = new Command("start")
   .description("Start production server")
   .action(() => {
+    const pm = getPackageManager();
     const port = process.env.NEXT_PUBLIC_APP_PORT || "3000";
-    executeCommand(`next start -p ${port}`);
+    executeCommand(pm === "bun" ? `bun --bun next start -p ${port}` : `next start -p ${port}`);
   });
 
 export const testCommand = new Command("test")
